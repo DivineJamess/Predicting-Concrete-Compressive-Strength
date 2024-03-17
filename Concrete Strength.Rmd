@@ -1,0 +1,568 @@
+---
+title: "Data 603 Project"
+author: "Ahuchogu, Divine | Ouano, Archangelo - 30235358"
+date: "2023-11-28"
+output: pdf_document
+header-includes: \usepackage{fvextra} \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(binom)
+library(car)
+library(collapsibleTree)
+library(dbplyr)
+library(dplyr)
+library(EnvStats)
+library(ggformula)
+library(ggplot2)
+library(gmodels)
+library(htmltools)
+library(ISLR)
+library(knitr)
+library(lawstat)
+library(markdown)
+library(mosaic)
+library(mdsr)
+library(mosaicData)
+library(nycflights13)
+library(olsrr)
+library(plyr)
+library(purrr)
+library(plotly)
+library(resampledata)
+library(rmarkdown)
+library(rpart)
+library(rpart.plot)
+library(rvest)
+library(SDaA)
+library(shiny)
+library(stringi)
+library(tibble)
+library(tidyr)
+library(tidyselect)
+library(tinytex)
+library(yaml)
+library(shiny)
+library(leaps)
+library(GGally)
+library(lmtest)
+library(MASS)
+library(mctest)
+```
+
+# Chapter 1: Introduction
+
+This project will be fitting a Multiple linear regression model that would predict the Concrete compressive strength of a certain concrete mixture. To achieve this we used a concrete dataset that contains records where each record represents a unique concrete mixture and its associated Concrete compressive strength. It contains 8 potential predictor variables that are all quantitative. 
+
+To restrict the model and determine the best predictor variables, Stepwise, Backward Elimination, Forward Selection, and All-Possible-Regression procedures were used. After coming up with the best First-order regression model, interaction terms and high-order model are considered.
+
+Once we've determined the best possible multiple linear regression model, a diagnostic analysis was conducted to verify if this model meets the different regression assumptions. 
+
+Before we continue on the regression aspect of this project, it's important to clearly understand what Concrete Compressive strength is all about and why is it important. An article written by Lysett (2019) [2] about concrete strength defined Concrete Compressive Strength as the “most common and well-accepted measurement of concrete strength, which measures the ability of concrete to withstand loads that will decrease the size of the concrete.” This is significantly important since it will determine the quality and longevity of concrete projects as well as the associated costs in meeting concrete strength requirements.
+
+## Motivation
+
+The motivation behind this topic is we were curious about what makes the most important component of an infrastructure strong. This is the reason we decided to work on this topic.
+
+
+## Objectives
+
+The objectives of this project are the following:  
+* To fit a multiple linear regression model that only contains the statistically significant predictor variables that will predict Concrete Compressive Strength;
+* To ensure that our final regression model conforms with the different regression assumptions;
+
+
+# Chapter 2: Methodology
+
+## Data
+
+The dataset used in this project was taken from UC Irvine Machine Learning Repository. It is an open source dataset with the following license: https://creativecommons.org/licenses/by/4.0/legalcode. This dataset contains 1030 records where each record represents a unique concrete-mixture and the associated Concrete compressive strength. It has a total of 9 variables that are all quantitative, namely:  
+
+* Cement is a quantitative variable and is measure by kg/m3 mixture  
+* Blast Furnace Slag is a quantitative variable and is measured by kg/m3 mixture  
+* Fly Ash is a quantitative variable and is measured by kg/m3 mixture  
+* Water is a quantitative variable and is measured by kg/m3 mixture  
+* Superplasticizer is a quantitative variable and is measured by kg/m3 mixture   
+* Coarse Aggregate is a quantitative variable and is measured by kg/m3 mixture   
+* Fine Aggregate is a quantitative variable and is measured by kg/m3 mixture   
+* Age is a quantitative variable and is measured by Days (i.e., 365 days (about 12 months) of a year)  
+* Concrete compressive strength is a quantitative variable and is measured by MPa.  
+
+Concrete compressive strength is our response variable and the rest are our predictor variables.
+
+
+## Workflow
+* Fit all possible predictor variables to the regression model  
+* Use Stepwise, Backward Elimination, Forward Selection, and All-Possible-Regression Selection Procedures to determine the best predictor variables  
+* Consider interaction terms and High-order model.
+* Perform regression diagnostic analysis
+* If the regression model doesn't meet the assumptions perform Box-Cox Transformation
+
+
+## Workload Distribution
+* Fitting the Regression model by determining the best predictor variables using the different Selection procedure methods and considering interaction terms and high-order model - Archangelo Ouano  
+* Performing regression model diagnostic test by verifying if the model conforms with the different regression assumptions - Divine Ahuchogu
+
+
+# Chapter 3: Main Results of the Analysis
+
+
+## Fitting the Full model
+
+```{r}
+concretedata = read.csv("https://raw.githubusercontent.com/Archangelo08/Data-603-Project/main/cleanedconc_data.csv", header=TRUE)
+head(concretedata, 6)
+tail(concretedata, 5)
+```
+
+Creating the Full model:
+
+```{r}
+fullmodel = lm(Concrete_compressive_strength~Cement +
+                 Blast_Furnace_Slag +
+                 Fly_Ash+Water +
+                 Superplasticizer +
+                 Coarse_Aggregate +
+                 Fine_Aggregate+Age,
+               data=concretedata)
+summary(fullmodel)
+```
+
+Full model Regression Equation:
+
+$\widehat{\text{Concrete Compressive Strength}}$ = $\beta_{0} + \beta_{1}Cement + \beta_{2}Blast\_Furnace\_Slag + \beta_{3}Fly\_Ash + \beta{4}Water + \beta_{5}Superplasticizer + \beta_{6}Coarse\_Aggregate + \beta_{7}Fine\_Aggregate + \beta_{8}Age$  
+
+**Choosing the Best model using the following regression procedures:**  
+* Stepwise Regression Procedure  
+* Backward Elimination Procedure  
+* Forward Selection Procedure  
+* All-Possible-Regression Selection Procedure
+
+
+Using **Stepwise Regression Procedure**:
+
+```{r}
+stepfullmodel=ols_step_both_p(fullmodel, pent=0.05, prem=0.1, details=FALSE)
+summary(stepfullmodel$model)
+```
+
+Using **Backward Elimination Procedure**:
+
+```{r}
+backfullmodel = ols_step_backward_p(fullmodel, prem=0.1, details=FALSE)
+summary(backfullmodel$model)
+```
+
+By using the Backward Elimination Procedure, it provides the following first-order regression model:  
+$\beta_{0}+\beta_{1}Cement+\beta_{2}Blast\_Furnace\_Slag+\beta_{3}Water+\beta_{4}Fine\_Aggregate+\beta_{5}Age$. However, the p-value of Fine_Aggregate is > 0.05, so this will be dropped from the model. 
+
+Using **Forward Selection Procedure**
+
+```{r}
+forwardfullmodel = ols_step_forward_p(fullmodel, penter=0.05, details=FALSE)
+summary(forwardfullmodel$model)
+```
+
+Using **All-Possible-Regression selection procedure**:
+
+```{r}
+best_subset = regsubsets(Concrete_compressive_strength~Cement + 
+                           Blast_Furnace_Slag +
+                           Fly_Ash+Water +
+                           Superplasticizer +
+                           Coarse_Aggregate +
+                           Fine_Aggregate +
+                           Age,
+                         data=concretedata,
+                         nv=8)
+summary(best_subset)
+```
+
+```{r}
+reg_summary = summary(best_subset)
+rsquare = c(reg_summary$rsq)
+cp = c(reg_summary$cp)
+AdjustedR = c(reg_summary$adjr2)
+RMSE = c(reg_summary$rss)
+BIC = c(reg_summary$bic)
+cbind(rsquare,cp,BIC,RMSE,AdjustedR)
+```
+
+```{r}
+par(mfrow=c(3,2))
+plot(reg_summary$cp,type="o",pch=10,xlab="Number of Variables",ylab="Cp")
+plot(reg_summary$bic,type="o",pch=10,xlab="Number of Variables",ylab="BIC")
+plot(reg_summary$rsq,type="o",pch=10,xlab="Number of Variables",ylab="R^2")
+plot(reg_summary$rss,type="o",pch=10,xlab="Number of Variables",ylab="RMSE")
+plot(reg_summary$adjr2,type="o",pch=10,xlab="Number of Variables",ylab="Adjusted R^2")
+```
+
+Based on the output above, we will be selecting 4 subset of predictor variables namely:  
+* Cement  
+* Blast_Furnace_Slag  
+* Water  
+* Age  
+
+**Summary of best predictor variables selected by the different Regression selection procedures above:**
+
+Stepwise:  
+* Age  
+* Cement  
+* Blast_Furnace_Slag  
+* Water
+
+Backward Elimination:  
+* Cement  
+* Blast_Furnace_Slag  
+* Water  
+* Age  
+
+Forward Selection:  
+* Age  
+* Cement  
+* Blast_Furnace_Slage  
+* Water  
+
+All-Possible-Regression:  
+* Cement  
+* Blast_Furnace_Slag  
+* Water  
+* Age  
+
+With these results, our **best first-order regression model** is the following:
+
+```{r}
+bestfirstorder = lm(Concrete_compressive_strength~Cement +
+                      Blast_Furnace_Slag +
+                      Water +
+                      Age,
+                    data=concretedata)
+summary(bestfirstorder)
+```
+
+First-Order Regression Equation:
+
+$\widehat{\text{Concrete Compressive Strength}}$ = $\beta_{0} + \beta_{1}Cement + \beta_{2}Blat\_Furnace\_Slag + \beta_{3}Water + \beta_{4}Age$
+
+## Checking for Interactions and High-order Model
+
+### Intearction terms
+
+```{r}
+bestFOinterac = lm(Concrete_compressive_strength~(Cement+Blast_Furnace_Slag+Water+Age)^2, data=concretedata)
+summary(bestFOinterac)
+```
+
+Using partial T test to drop interaction terms that are not significant in predicting the response variable, with $\alpha = 0.05$, the only interaction terms that are significant are the following:  
+* Cement:Blast_Furnace_Slag  
+* Cement:Age  
+
+```{r}
+bestFOredinterac = lm(Concrete_compressive_strength~Cement+Blast_Furnace_Slag+Water+Age+Cement:Blast_Furnace_Slag+Cement:Age, data=concretedata)
+summary(bestFOredinterac)
+```
+
+Comparing the best first-order model with the same regression model, but with interaction terms (significant only):  
+Best First-order regression model:  
+* RMSE = 8.39  
+* Adjusted R-squared = 0.6519  
+
+Best First-order regression model, including significant interaction terms:  
+* RMSE = 8.071  
+* Adjusted R-squared = 0.6778
+
+**We can infer that the best first-order model that includes significant interaction terms is better.**
+
+### High-order model
+
+```{r}
+bestFOconcretedata = data.frame(
+  concretedata$Concrete_compressive_strength,
+  concretedata$Cement,
+  concretedata$Blast_Furnace_Slag,
+  concretedata$Water,
+  concretedata$Age)
+
+ggpairs(bestFOconcretedata,
+        lower=list(
+          continuous="smooth_loess",
+          combo="facethist",
+          discrete="facetbar",
+          na="na"), 
+        progress=FALSE)
+```
+
+Based on the ggpairs matrix visual, the predictor variable that potentially supports high-order model are:  
+* Blast_Furnace_Slag
+* Age (maybe)
+
+Let's create the regression model that includes high-order model:
+
+```{r}
+secondordermodel = lm(Concrete_compressive_strength~Cement + poly(Blast_Furnace_Slag,2,raw=T) + Water + poly(Age,2,raw=T) + Cement:Blast_Furnace_Slag + Cement:Age, data=concretedata)
+summary(secondordermodel)
+```
+
+Based on the output above, transforming Blast_Furnace_Slag predictor variable into a high-order model turned out to be not significant in predicting the response variable. On the other hand, Age is. Let's check if transforming Age into its third order is still significant:
+
+```{r}
+thirdordermodel = lm(Concrete_compressive_strength~Cement + Blast_Furnace_Slag + Water + poly(Age,3,raw=T) + Cement:Blast_Furnace_Slag + Cement:Age, data=concretedata)
+summary(thirdordermodel)
+```
+
+It turns out transforming Age into its third model is not significant with p value > 0.05. So, we'll stop at its second order model.
+
+**This is the best regression model, including interaction terms and high-order model:**
+
+```{r}
+bestmodel = lm(Concrete_compressive_strength~Cement + Blast_Furnace_Slag + Water + poly(Age,2,raw=T) + Cement:Blast_Furnace_Slag + Cement:Age, data=concretedata)
+summary(bestmodel)
+```
+
+After we have applied a high-order transformation on the Age predictor variable the interaction term Cement:Age turned out to be insignificant in predicting the response variable, so we will be dropping this.
+
+```{r}
+bestmodel = lm(Concrete_compressive_strength~Cement + Blast_Furnace_Slag + Water + poly(Age,2,raw=T) + Cement:Blast_Furnace_Slag, data=concretedata)
+summary(bestmodel)
+```
+
+
+Comparing the regression model that includes only interaction terms and the regression model that includes both interaction terms and high-order model:  
+Best regression model only interaction terms:  
+* RMSE = 8.071  
+* Adjusted R-squared = 0.6778
+
+Best regression model with interaction terms and high-order model:  
+* RMSE = 7.376  
+* Adjusted R-squared = 0.731
+
+We can infer that the regression model that includes both interaction terms and high-order model (all significant) is better.
+
+**This is the best model after using the different regression selection procedures and including both interaction terms and high-order model**
+
+$\widehat{Concrete\_compressive\_strength}$ = 25.3809 + (0.0775459+0.0003171Blast_Furnace_Slag)Cement + (0.0065590+0.0003171)Blast_Furnace_Slag + 0.8578Age - 0.0050Age^2
+
+
+## Checking the Regression Assumptions
+
+**Linearity Assumption**
+
+```{r}
+
+residuals <- residuals(bestmodel)
+fitted.values <- fitted(bestmodel)
+
+# Create a data frame for ggplot
+residual_plot_data <- data.frame(Fitted = fitted.values, Residuals = residuals)
+
+ggplot(residual_plot_data, aes(x = Fitted, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+
+```
+
+**Equal Variance Assumption**
+
+Defining the Hypothesis test:
+
+$$
+\begin{aligned}
+H_{0} &: \text{Heteroscedasticity does not exist} \\
+H_{A} &: \text{Heteroscedasticity does exist}
+\end{aligned}
+$$
+
+Using the Breusch-Pagan test to check for Heteroscedasticity:
+
+```{r}
+bptest(bestmodel)
+```
+Based on the result from the Breusch-Pagan test p-value, we can say that there is heteroscedasticity in the model and conclude that the equal variance assumption is not met by the model.
+
+
+**Normality Assumption**
+
+$$
+\begin{aligned}
+H_{0} &: \text{The data are significantly normally distributed} \\
+H_{A} &: \text{The data are not significantly normally distributed}
+\end{aligned}
+$$
+```{r}
+# Shapiro-Wilk normality test
+shapiro.test(residuals(bestmodel))
+
+ggplot(data = concretedata, aes(sample=bestmodel$residuals)) + stat_qq() + stat_qq_line()
+```
+
+This Shapiro-Wilk normality test with a p-value of 0.8049 and the normality graph, gives us an evidence to say that the normality assumption is met by the model.
+
+```{r}
+ggplot(data = concretedata, aes(x = residuals(bestmodel))) +   geom_histogram(binwidth = 4, fill = "blue", color = "black") +   labs(title = "Figure 3 - Histogram for Residuals", x = "Residuals", y = "Count")
+```
+This histogram also further shows the conclusion of our normality assumption.
+
+**Mutlicollinearity**
+
+```{r}
+# Since our best model is a higher order model, we will perform the VIF on the first order model and the higher order model which is our best model.
+
+firstordermodel = lm(Concrete_compressive_strength~Cement+Blast_Furnace_Slag+Water+Age, data=concretedata)
+
+vif(firstordermodel)
+
+imcdiag(firstordermodel, method="VIF")
+
+#P erforming it on our best model gives us multicollinearity as seen below
+ 
+imcdiag(bestmodel, method="VIF")
+```
+
+From the two multicollinearity test using the VIF method, we can see that on the first order model, that no multicollinearity was detected but we cannot say the same for our best model given that multicollinearity was detected. This is expected since we transformed the Age predictor variable into its second order model.
+
+**Outliers**
+
+```{r}
+residuals <- residuals(bestmodel)
+
+# Create a boxplot for residuals
+boxplot(residuals, main = "Residuals Boxplot", ylab = "Residuals")
+plot(bestmodel, col = "red", which = 4)
+```
+
+We can also see that outliers were detected but they are not influential and as such is ignored.
+
+
+**Applying Box-Cox transformation to fix the Heteroscedasticity issue**
+
+```{r}
+bc=boxcox(bestmodel,lambda=seq(-1,1))
+```
+
+Calculating for $\lambda$
+
+```{r}
+bestlambda=bc$x[which(bc$y==max(bc$y))]
+bestlambda
+```
+
+Transforming the response variable:
+
+```{r}
+bcmodel = lm((((Concrete_compressive_strength^0.7373737)-1)/0.7373737)~Cement +
+               Blast_Furnace_Slag +
+               Water +
+               poly(Age,2,raw=T) +
+               Cement:Blast_Furnace_Slag,
+             data=concretedata)
+summary(bcmodel)
+```
+
+
+
+**Comparing the best model and the model after Box-Cox transformation**
+
+Best model:
+
+```{r}
+summary(bestmodel)
+```
+
+
+Model after Box-Cox Transformation:
+
+```{r}
+summary(bcmodel)
+```
+
+If we look at the RMSE, the model after Box-Cox transformation has been significantly reduced to 2.853. Similarly, the RMSE model also increased from 0.731 to 0.7323. With this information, we can conclude that this is our best model despite it not conforming with the Equal Variance Assumption. Here's the regression equation:
+
+$\widehat{\text{Concrete Compressive Strength}}$ = 12.82 + (0.03064+0.0001174Blast_Furnace_Slag)Cement + (0.005157+0.0001174Cement)Blast_Furnace_Slag - 0.06905Water + 0.3372Age - 0.001974Age^2
+
+
+**Performing Regression Diagnostic with the new model `bcmodel`**
+
+```{r}
+residuals <- residuals(bcmodel)
+fitted.values <- fitted(bcmodel)
+
+# Create a data frame for ggplot
+residual_plot_data <- data.frame(Fitted = fitted.values, Residuals = residuals)
+
+ggplot(residual_plot_data, aes(x = Fitted, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+```
+
+Test for Heteroscedasticity:
+
+```{r}
+bptest(bcmodel)
+
+plot_data <- data.frame(Fitted = fitted.values, Residuals = residuals)
+
+# Create the Scale-Location plot using ggplot2
+ggplot(plot_data, aes(x = Fitted, y = sqrt(abs(Residuals)))) + geom_point() + geom_smooth(method = "loess", se = FALSE, col = "blue") +  labs(title = "Scale-Location Plot", x = "Fitted Values", y = "Square Root of Standardized Residuals") + theme_minimal()
+
+```
+
+Test for Normality
+
+```{r}
+shapiro.test(residuals(bcmodel))
+
+ggplot(data = concretedata, aes(sample=bcmodel$residuals)) + stat_qq() + stat_qq_line()
+```
+
+**Mutlicollinearity**
+
+```{r}
+#Performing it on our bcmodel gives us multicollinearity as well
+ 
+imcdiag(bcmodel, method="VIF")
+```
+
+Test for Outliers
+```{r}
+
+residuals <- residuals(bcmodel)
+
+boxplot(residuals, main = "Residuals Boxplot", ylab = "Residuals")
+plot(bcmodel, col = "red", which = 4)
+
+```
+
+**Example: Using our best model to predict Concrete Compressive Strength**
+
+```{r}
+# Make sure the variable names match those in your original model
+new_data <- data.frame(
+  Cement = c(168),
+  Blast_Furnace_Slag = c(42.1),
+  Water = c(121.8),
+  Age = c(3)
+)
+
+confidence_level <- 0.95
+
+# Use the model to make predictions
+predictions <- predict(bcmodel, newdata = new_data, interval = "predict", level = confidence_level)
+
+print(predictions)
+```
+
+# References
+[1] I-Cheng Yeh, “Concrete Compressive Strength.” UCI Machine Learning Repository, 1998. doi: 10.24432/C5PK67.  
+[2] Lysett, T. (2019, March 31). Everything You Need to Know About Concrete Strength | Cor-Tuf. https://cortuf.com/everything-you-need-to-know-about-concrete-strength/  
